@@ -1,6 +1,61 @@
 #include <esp_now.h>
 #include "WiFi.h"
+#include "MPU6050.h"
+#include "Wire.h"
 
+MPU6050 mpu;
+
+// Relative motion state between this device and the remote device
+enum MotionState { IDLE, ACCELERATING, BRAKING };
+
+// Threshold in raw accelerometer units (±2g range: 16384 LSB/g)
+// 0.15g * 16384 = ~2458
+const int16_t ACCEL_THRESHOLD = 2458;
+
+// Baseline X-axis reading at rest (calibrated in setup)
+int16_t baselineX = 0;
+
+// Latest local forward acceleration (baseline-corrected)
+volatile int16_t localAccel = 0;
+
+// Latest remote forward acceleration received via ESP-NOW
+volatile int16_t remoteAccel = 0;
+volatile bool remoteDataReceived = false;
+
+// Read this device's forward acceleration (X-axis, baseline-corrected)
+int16_t readLocalAccel() {
+  int16_t ax, ay, az;
+  mpu.getAcceleration(&ax, &ay, &az);
+  return ax - baselineX;
+}
+
+// Determine relative motion state.
+// relativeAccel = remoteAccel - localAccel
+//   negative → remote is decelerating relative to us → gap closing → BRAKING
+//   positive → remote is accelerating relative to us → gap growing → ACCELERATING
+MotionState detectRelativeMotion() {
+  int16_t relativeAccel = remoteAccel - localAccel;
+
+  if (relativeAccel < -ACCEL_THRESHOLD) {
+    return BRAKING;
+  } else if (relativeAccel > ACCEL_THRESHOLD) {
+    return ACCELERATING;
+  }
+  return IDLE;
+}
+
+// Calibrate baseline by averaging samples while the device is stationary
+void calibrateMPU(int samples = 100) {
+  long sumX = 0;
+  for (int i = 0; i < samples; i++) {
+    int16_t ax, ay, az;
+    mpu.getAcceleration(&ax, &ay, &az);
+    sumX += ax;
+    delay(10);
+  }
+  baselineX = sumX / samples;
+  Serial.printf("MPU6050 calibrated. Baseline X: %d\n", baselineX);
+}
 
 uint8_t macAddress[6];
 // Broadcast address: sends to all ESP-NOW peers on the same channel
@@ -15,18 +70,29 @@ void onDataSent(const wifi_tx_info_t *tx_info, esp_now_send_status_t status) {
     status == ESP_NOW_SEND_SUCCESS ? "OK" : "FAIL");
 }
 
-// Called when this board receives data from any ESP-NOW peer
+// Called when this board receives data from any ESP-NOW peer.
+// Expects a raw int16_t representing the remote device's forward acceleration.
 void onDataRecv(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
-  Serial.printf("Received %d bytes from %02X:%02X:%02X:%02X:%02X:%02X: ",
-    len,
-    info->src_addr[0], info->src_addr[1], info->src_addr[2],
-    info->src_addr[3], info->src_addr[4], info->src_addr[5]);
-  Serial.write(data, len);
-  Serial.println();
+  if (len == sizeof(int16_t)) {
+    memcpy((void *)&remoteAccel, data, sizeof(int16_t));
+    remoteDataReceived = true;
+  }
 }
 
 void setup() {
   Serial.begin(115200);
+
+  // Initialize MPU6050
+  Wire.begin();
+  mpu.initialize();
+  if (!mpu.testConnection()) {
+    Serial.println("MPU6050 connection failed");
+    return;
+  }
+  Serial.println("MPU6050 connected");
+
+  // Calibrate at rest — keep the device still during startup
+  calibrateMPU();
 
   // WiFi must be in station mode for ESP-NOW to work
   WiFi.mode(WIFI_STA);
@@ -40,7 +106,6 @@ void setup() {
   // Initialize ESP-NOW protocol
   if (esp_now_init() != ESP_OK) {
     Serial.println("Error initializing ESP-NOW");
-
     return;
   }
   Serial.println("Successfully initialized ESP-NOW");
@@ -66,14 +131,29 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
 }
 
-// Dummy loop: broadcasts a message every 4s while blinking the LED
 void loop() {
-  const char *message = "hello from ESP32";
-  esp_now_send(broadcastAddress, (const uint8_t *)message, strlen(message));
+  // Read and broadcast our own forward acceleration
+  localAccel = readLocalAccel();
+  esp_now_send(broadcastAddress, (const uint8_t *)&localAccel, sizeof(localAccel));
 
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(2000);
+  // Compute relative motion only if we've heard from the other device
+  if (remoteDataReceived) {
+    MotionState state = detectRelativeMotion();
 
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(2000);
+    switch (state) {
+      case BRAKING:
+        Serial.println("Relative: BRAKING (vehicle ahead slowing down)");
+        digitalWrite(LED_BUILTIN, HIGH);
+        break;
+      case ACCELERATING:
+        Serial.println("Relative: ACCELERATING (vehicle ahead speeding up)");
+        digitalWrite(LED_BUILTIN, LOW);
+        break;
+      default:
+        digitalWrite(LED_BUILTIN, LOW);
+        break;
+    }
+  }
+
+  delay(100);
 }
