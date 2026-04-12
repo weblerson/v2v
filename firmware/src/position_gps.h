@@ -23,6 +23,7 @@ class PositionGPSHandler : public PositionHandler {
   bool begin() override;
   void update() override;
   bool distanceTo(const uint8_t mac[6], float& meters) override;
+  bool bearingTo(const uint8_t mac[6], float& degrees) override;
 
  private:
   struct PeerPosition {

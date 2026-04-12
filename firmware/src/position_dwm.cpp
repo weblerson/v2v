@@ -17,3 +17,7 @@ void PositionDWMHandler::update() {
 bool PositionDWMHandler::distanceTo(const uint8_t /*mac*/[6], float& /*meters*/) {
   return false;
 }
+
+bool PositionDWMHandler::bearingTo(const uint8_t /*mac*/[6], float& /*degrees*/) {
+  return false;
+}

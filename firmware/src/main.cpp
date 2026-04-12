@@ -53,39 +53,62 @@ static MotionState aggregateState(int16_t localAccel) {
   return worst;
 }
 
+static const char* stateStr(MotionState s) {
+  switch (s) {
+    case BRAKING:      return "BRAKING";
+    case ACCELERATING: return "ACCELERATING";
+    default:           return "IDLE";
+  }
+}
+
 void loop() {
   position.update();
 
   const int16_t local = motion::readSmoothedLocalAccel();
   comms::broadcastAccel(local);
 
-  // Log distance to every currently-fresh peer, when positioning has data.
+  // Emit one NDJSON line per fresh peer, compatible with the monitor app.
+  // Format: {"mac":"XX:XX:XX:XX:XX:XX","distance":12.3,"bearing":45.0,"state":"BRAKING"}
   {
     PeerState fresh[MAX_PEERS];
     const int n = peers::snapshotFresh(fresh, millis());
     for (int i = 0; i < n; i++) {
-      float meters = 0.0f;
-      if (position.distanceTo(fresh[i].mac, meters)) {
-        Serial.printf("Peer %02X:%02X:%02X:%02X:%02X:%02X  distance=%.1f m\n",
+      float meters  = 0.0f;
+      float bearing = 0.0f;
+      bool hasDist    = position.distanceTo(fresh[i].mac, meters);
+      bool hasBearing = position.bearingTo(fresh[i].mac, bearing);
+
+      MotionState s = motion::classify(local, fresh[i].lastAccel);
+
+      // Only emit if we have at least distance data.
+      if (hasDist) {
+        Serial.printf(
+          "{\"mac\":\"%02X:%02X:%02X:%02X:%02X:%02X\","
+          "\"distance\":%.1f,"
+          "\"bearing\":%.1f,"
+          "\"state\":\"%s\"}\n",
           fresh[i].mac[0], fresh[i].mac[1], fresh[i].mac[2],
-          fresh[i].mac[3], fresh[i].mac[4], fresh[i].mac[5], meters);
+          fresh[i].mac[3], fresh[i].mac[4], fresh[i].mac[5],
+          meters,
+          hasBearing ? bearing : 0.0f,
+          stateStr(s));
+      }
+
+      // LED: light up if any peer is braking.
+      if (s == BRAKING) {
+        digitalWrite(LED_BUILTIN, HIGH);
       }
     }
   }
 
-  switch (aggregateState(local)) {
-    case BRAKING:
-      Serial.println("Relative: BRAKING");
-      digitalWrite(LED_BUILTIN, HIGH);
-      break;
-    case ACCELERATING:
-      Serial.println("Relative: ACCELERATING");
+  // Turn LED off if nobody is braking (set above only if someone was).
+  // Slight simplification: if at least one peer brakes, LED stays on
+  // for this cycle; otherwise off.
+  {
+    MotionState worst = aggregateState(local);
+    if (worst != BRAKING) {
       digitalWrite(LED_BUILTIN, LOW);
-      break;
-    case IDLE:
-    default:
-      digitalWrite(LED_BUILTIN, LOW);
-      break;
+    }
   }
 
   delay(LOOP_INTERVAL_MS);

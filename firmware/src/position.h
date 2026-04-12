@@ -26,4 +26,9 @@ class PositionHandler {
   // A stale value is never returned: in a moving vehicle, a cached
   // "safe distance" from seconds ago is actively dangerous.
   virtual bool distanceTo(const uint8_t mac[6], float& meters) = 0;
+
+  // Resolve the bearing in degrees (0 = north, clockwise) from this
+  // device to the peer identified by `mac`. Same freshness contract
+  // as distanceTo().
+  virtual bool bearingTo(const uint8_t mac[6], float& degrees) = 0;
 };

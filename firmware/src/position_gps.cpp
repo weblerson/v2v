@@ -38,6 +38,21 @@ double haversine(double lat1, double lon1, double lat2, double lon2) {
   return EARTH_RADIUS_M * c;
 }
 
+double rad2deg(double r) { return r * (180.0 / M_PI); }
+
+// Forward azimuth from point 1 to point 2, in degrees (0 = north, clockwise).
+double forwardAzimuth(double lat1, double lon1, double lat2, double lon2) {
+  const double dLon = deg2rad(lon2 - lon1);
+  const double lat1r = deg2rad(lat1);
+  const double lat2r = deg2rad(lat2);
+  const double x = sin(dLon) * cos(lat2r);
+  const double y = cos(lat1r) * sin(lat2r) -
+                   sin(lat1r) * cos(lat2r) * cos(dLon);
+  double bearing = rad2deg(atan2(x, y));
+  if (bearing < 0) bearing += 360.0;
+  return bearing;
+}
+
 bool macEqual(const uint8_t a[6], const uint8_t b[6]) {
   return memcmp(a, b, 6) == 0;
 }
@@ -114,6 +129,34 @@ bool PositionGPSHandler::distanceTo(const uint8_t mac[6], float& meters) {
   if (!peerFresh) return false;
 
   meters = (float)haversine(localLat_, localLon_, peerLat, peerLon);
+  return true;
+}
+
+bool PositionGPSHandler::bearingTo(const uint8_t mac[6], float& degrees) {
+  const uint32_t nowMs = millis();
+
+  if (!hasLocalFix_ || (nowMs - localFixMillis_) > POSITION_MAX_AGE_MS) {
+    return false;
+  }
+
+  double peerLat = 0, peerLon = 0;
+  bool   peerFresh = false;
+
+  portENTER_CRITICAL(&peerMux);
+  for (int i = 0; i < MAX_PEERS; i++) {
+    if (!peers_[i].used) continue;
+    if (!macEqual(peers_[i].mac, mac)) continue;
+    if ((nowMs - peers_[i].lastRxMillis) > POSITION_MAX_AGE_MS) break;
+    peerLat   = peers_[i].lat;
+    peerLon   = peers_[i].lon;
+    peerFresh = true;
+    break;
+  }
+  portEXIT_CRITICAL(&peerMux);
+
+  if (!peerFresh) return false;
+
+  degrees = (float)forwardAzimuth(localLat_, localLon_, peerLat, peerLon);
   return true;
 }
 
