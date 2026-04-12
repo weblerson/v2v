@@ -4,6 +4,13 @@
 #include "motion.h"
 #include "comms.h"
 #include "peers.h"
+#include "position.h"
+#include "position_gps.h"
+
+// Active positioning backend. Swap to PositionDWMHandler when the UWB
+// hardware lands — no other file needs to change.
+static PositionGPSHandler gpsHandler;
+static PositionHandler&   position = gpsHandler;
 
 void setup() {
   Serial.begin(115200);
@@ -24,6 +31,10 @@ void setup() {
   }
   Serial.println("Comms ready");
 
+  if (!position.begin()) {
+    Serial.println("Position handler init failed — continuing without positioning");
+  }
+
   pinMode(LED_BUILTIN, OUTPUT);
 }
 
@@ -43,8 +54,24 @@ static MotionState aggregateState(int16_t localAccel) {
 }
 
 void loop() {
+  position.update();
+
   const int16_t local = motion::readSmoothedLocalAccel();
   comms::broadcastAccel(local);
+
+  // Log distance to every currently-fresh peer, when positioning has data.
+  {
+    PeerState fresh[MAX_PEERS];
+    const int n = peers::snapshotFresh(fresh, millis());
+    for (int i = 0; i < n; i++) {
+      float meters = 0.0f;
+      if (position.distanceTo(fresh[i].mac, meters)) {
+        Serial.printf("Peer %02X:%02X:%02X:%02X:%02X:%02X  distance=%.1f m\n",
+          fresh[i].mac[0], fresh[i].mac[1], fresh[i].mac[2],
+          fresh[i].mac[3], fresh[i].mac[4], fresh[i].mac[5], meters);
+      }
+    }
+  }
 
   switch (aggregateState(local)) {
     case BRAKING:

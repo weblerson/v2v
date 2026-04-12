@@ -10,9 +10,10 @@
 
 namespace {
 
-uint8_t  selfMac[6]               = {0};
-uint8_t  broadcastAddr[6]         = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-uint32_t txSeq                    = 0;
+uint8_t                   selfMac[6]         = {0};
+uint8_t                   broadcastAddr[6]   = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+uint32_t                  txSeq              = 0;
+comms::PositionRxHandler  positionRxHandler  = nullptr;
 
 void onDataSent(const uint8_t* /*mac_addr*/, esp_now_send_status_t status) {
   if (status != ESP_NOW_SEND_SUCCESS) {
@@ -21,17 +22,28 @@ void onDataSent(const uint8_t* /*mac_addr*/, esp_now_send_status_t status) {
 }
 
 void onDataRecv(const uint8_t* srcMac, const uint8_t* data, int len) {
-  if (len != sizeof(V2VPacket)) return;
+  // Dispatch by payload size. Every packet type carries its own `mac`
+  // field, which we cross-check against the link-layer source for anti-
+  // spoofing, and we always drop our own broadcasts (we're a member of
+  // the FF:FF:FF:FF:FF:FF peer group too).
+  if (len == (int)sizeof(V2VPacket)) {
+    V2VPacket pkt;
+    memcpy(&pkt, data, sizeof(pkt));
+    if (memcmp(pkt.mac, srcMac, 6) != 0) return;
+    if (memcmp(pkt.mac, selfMac, 6) == 0) return;
+    peers::upsert(pkt.mac, pkt.seq, pkt.accel, millis());
+    return;
+  }
 
-  V2VPacket pkt;
-  memcpy(&pkt, data, sizeof(pkt));
-
-  // Anti-spoof: payload mac must match the link-layer source.
-  if (memcmp(pkt.mac, srcMac, 6) != 0) return;
-  // Drop our own broadcasts (we're a peer of FF:FF:FF:FF:FF:FF too).
-  if (memcmp(pkt.mac, selfMac, 6) == 0) return;
-
-  peers::upsert(pkt.mac, pkt.seq, pkt.accel, millis());
+  if (len == (int)sizeof(PositionPacket)) {
+    PositionPacket pkt;
+    memcpy(&pkt, data, sizeof(pkt));
+    if (memcmp(pkt.mac, srcMac, 6) != 0) return;
+    if (memcmp(pkt.mac, selfMac, 6) == 0) return;
+    if (positionRxHandler) positionRxHandler(srcMac, pkt);
+    return;
+  }
+  // Unknown length — silently drop.
 }
 
 }  // namespace
@@ -70,6 +82,14 @@ void broadcastAccel(int16_t accel) {
   pkt.seq   = ++txSeq;
   pkt.accel = accel;
   esp_now_send(broadcastAddr, (const uint8_t*)&pkt, sizeof(pkt));
+}
+
+bool broadcastRaw(const void* data, size_t len) {
+  return esp_now_send(broadcastAddr, (const uint8_t*)data, len) == ESP_OK;
+}
+
+void setPositionRxHandler(PositionRxHandler handler) {
+  positionRxHandler = handler;
 }
 
 const uint8_t* localMac() { return selfMac; }

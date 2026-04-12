@@ -20,3 +20,14 @@ constexpr uint32_t REMOTE_TIMEOUT_MS = 500;
 
 // --- Loop timing ---
 constexpr uint32_t LOOP_INTERVAL_MS = 100;
+
+// --- Positioning ---
+// Max age for GPS/peer position data. Older than this → treated as
+// "no data", never returned to the caller. Deliberately short: a moving
+// vehicle's last-known position becomes dangerously misleading quickly.
+constexpr uint32_t POSITION_MAX_AGE_MS = 1500;
+
+// NEO-6M default UART baud rate.
+constexpr uint32_t GPS_BAUD   = 9600;
+constexpr int      GPS_RX_PIN = 16;  // ESP32 RX2 — wire to GPS TX
+constexpr int      GPS_TX_PIN = 17;  // ESP32 TX2 — wire to GPS RX
