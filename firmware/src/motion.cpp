@@ -60,6 +60,14 @@ void calibrate() {
 int16_t readSmoothedLocalAccel() {
   int16_t ax, ay, az;
   mpu.getAcceleration(&ax, &ay, &az);
+#if DEBUG
+  static uint32_t lastMpuReport = 0;
+  uint32_t now = millis();
+  if (now - lastMpuReport >= 3000) {
+    lastMpuReport = now;
+    Serial.printf("[MPU] ax=%d ay=%d az=%d\n", ax, ay, az);
+  }
+#endif
   return pushSample((int16_t)(ax - baselineX));
 }
 

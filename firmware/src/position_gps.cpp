@@ -75,13 +75,34 @@ bool PositionGPSHandler::begin() {
 }
 
 void PositionGPSHandler::update() {
+  const uint32_t nowMs = millis();
+
   // Drain whatever NMEA bytes have accumulated since the last call.
   // TinyGPSPlus is purely incremental — this never blocks.
+#if DEBUG
+  static uint32_t byteCount = 0;
+  static uint32_t lastReport = 0;
+#endif
   while (gpsSerial.available() > 0) {
-    gps.encode((char)gpsSerial.read());
+    char c = (char)gpsSerial.read();
+#if DEBUG
+    byteCount++;
+#endif
+    gps.encode(c);
   }
-
-  const uint32_t nowMs = millis();
+#if DEBUG
+  if (nowMs - lastReport >= 3000) {
+    lastReport = nowMs;
+    Serial.printf("[GPS] bytes=%lu sats=%d fix=%d lat=%.6f lon=%.6f alt=%.1fm spd=%.1fkm/h\n",
+                  (unsigned long)byteCount,
+                  (int)gps.satellites.value(),
+                  (int)gps.location.isValid(),
+                  gps.location.lat(),
+                  gps.location.lng(),
+                  gps.altitude.meters(),
+                  gps.speed.kmph());
+  }
+#endif
 
   if (gps.location.isValid() && gps.location.isUpdated()) {
     localLat_       = gps.location.lat();

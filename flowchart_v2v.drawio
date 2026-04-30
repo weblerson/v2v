@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-04-26T00:00:00.000Z" agent="Claude" version="24.0.0" type="device">
+  <diagram id="v2v-flowchart" name="V2V System Flowchart">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ==================== START ==================== -->
+        <mxCell id="start" value="Carro Liga" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="660" y="30" width="160" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Fork into Firmware and Monitor -->
+        <mxCell id="fork" value="" style="rhombus;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="715" y="120" width="50" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e_start_fork" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="start" target="fork" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== FIRMWARE COLUMN (LEFT) ==================== -->
+        <mxCell id="fw_title" value="FIRMWARE (ESP32)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=16;fontStyle=5;fontColor=#1e3a5f;" vertex="1" parent="1">
+          <mxGeometry x="240" y="100" width="180" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Firmware Init -->
+        <mxCell id="fw_serial" value="Iniciar Serial&#xa;(115200 baud)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="250" y="180" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e_fork_fw" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fork" target="fw_serial" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="740" y="155" />
+              <mxPoint x="330" y="155" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="fw_mpu_init" value="Inicializar MPU6050&#xa;(Acelerômetro I2C)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="250" y="250" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fw_serial" target="fw_mpu_init" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fw_mpu_ok" value="MPU6050&#xa;conectado?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="275" y="320" width="110" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fw_mpu_init" target="fw_mpu_ok" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fw_halt1" value="HALT&#xa;(Erro MPU)" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="330" width="110" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e2_no" value="Não" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;fontColor=#b85450;" edge="1" source="fw_mpu_ok" target="fw_halt1" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fw_calibrate" value="Calibrar MPU6050&#xa;(100 amostras em repouso)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="250" y="410" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="Sim" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;fontColor=#82b366;" edge="1" source="fw_mpu_ok" target="fw_calibrate" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fw_peers_init" value="Inicializar tabela&#xa;de peers" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="250" y="480" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fw_calibrate" target="fw_peers_init" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fw_espnow" value="Inicializar ESP-NOW&#xa;(WiFi STA + broadcast)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="250" y="550" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fw_peers_init" target="fw_espnow" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fw_espnow_ok" value="ESP-NOW&#xa;ok?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="280" y="620" width="100" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fw_espnow" target="fw_espnow_ok" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fw_halt2" value="HALT&#xa;(Erro Comms)" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="625" width="120" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e6_no" value="Não" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;fontColor=#b85450;" edge="1" source="fw_espnow_ok" target="fw_halt2" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fw_gps_init" value="Inicializar GPS&#xa;(NEO-6M Serial2 9600 baud)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="250" y="700" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="Sim" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;fontColor=#82b366;" edge="1" source="fw_espnow_ok" target="fw_gps_init" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== FIRMWARE MAIN LOOP ==================== -->
+        <mxCell id="fw_loop_start" value="LOOP PRINCIPAL&#xa;(a cada 100ms)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="250" y="780" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fw_gps_init" target="fw_loop_start" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fw_gps_update" value="Ler dados GPS&#xa;(decodificar NMEA)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="250" y="855" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fw_loop_start" target="fw_gps_update" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fw_gps_fix" value="Fix GPS&#xa;válido?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="280" y="925" width="100" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fw_gps_update" target="fw_gps_fix" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fw_broadcast_pos" value="Broadcast posição&#xa;(PositionPacket&#xa;via ESP-NOW)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="80" y="920" width="150" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="e10_yes" value="Sim" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;fontColor=#82b366;" edge="1" source="fw_gps_fix" target="fw_broadcast_pos" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fw_read_accel" value="Ler aceleração local&#xa;(MPU6050 suavizado)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="250" y="1010" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fw_gps_fix" target="fw_read_accel" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fw_broadcast_accel" value="Broadcast aceleração&#xa;(V2VPacket via ESP-NOW)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="250" y="1085" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fw_read_accel" target="fw_broadcast_accel" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ESP-NOW cloud for V2V -->
+        <mxCell id="espnow_cloud" value="ESP-NOW&#xa;(broadcast&#xa;2.4 GHz)" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#f0f0f0;strokeColor=#666666;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="490" y="900" width="150" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="e_pos_cloud" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#82b366;" edge="1" source="fw_broadcast_pos" target="espnow_cloud" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="155" y="990" />
+              <mxPoint x="490" y="990" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_accel_cloud" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#82b366;" edge="1" source="fw_broadcast_accel" target="espnow_cloud" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="430" y="1110" />
+              <mxPoint x="430" y="960" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Other cars -->
+        <mxCell id="other_cars" value="Outros carros&#xa;(peers ESP-NOW)" style="shape=hexagon;perimeter=hexagonPerimeter2;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="490" y="1020" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cloud_cars" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#666666;" edge="1" source="espnow_cloud" target="other_cars" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Receive from peers -->
+        <mxCell id="fw_rx_peers" value="Receber pacotes dos peers&#xa;(callback ESP-NOW)&#xa;→ Atualizar tabela de peers" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="480" y="1100" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cars_rx" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#666666;" edge="1" source="other_cars" target="fw_rx_peers" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Process peers -->
+        <mxCell id="fw_snapshot" value="Para cada peer ativo:&#xa;(não expirado &lt; 500ms)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="240" y="1165" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fw_broadcast_accel" target="fw_snapshot" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fw_calc_dist" value="Calcular distância&#xa;(Haversine GPS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="160" y="1240" width="140" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="e14a" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fw_snapshot" target="fw_calc_dist" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fw_calc_bearing" value="Calcular rumo&#xa;(Azimute)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="320" y="1240" width="130" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="e14b" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fw_snapshot" target="fw_calc_bearing" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fw_classify" value="Classificar estado&#xa;(IDLE / ACCELERATING / BRAKING)&#xa;com histerese" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="200" y="1310" width="220" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="e15a" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fw_calc_dist" target="fw_classify" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15b" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fw_calc_bearing" target="fw_classify" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fw_serial_out" value="Enviar NDJSON via Serial&#xa;{mac, distance, bearing, state}" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fixedSize=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="175" y="1390" width="270" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fw_classify" target="fw_serial_out" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fw_led" value="Peer freando?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="270" y="1465" width="110" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fw_serial_out" target="fw_led" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fw_led_on" value="LED ON" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="1475" width="80" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="e17_yes" value="Sim" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;fontColor=#b85450;" edge="1" source="fw_led" target="fw_led_on" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fw_led_off" value="LED OFF" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="430" y="1475" width="80" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="e17_no" value="Não" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;fontColor=#82b366;" edge="1" source="fw_led" target="fw_led_off" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Loop back arrow -->
+        <mxCell id="fw_delay" value="delay(100ms)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="270" y="1540" width="110" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="e18a" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fw_led_on" target="fw_delay" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18b" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fw_led_off" target="fw_delay" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e_loop_back" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#9673a6;strokeWidth=2;" edge="1" source="fw_delay" target="fw_loop_start" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="60" y="1557" />
+              <mxPoint x="60" y="805" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ==================== USB SERIAL CONNECTION ==================== -->
+        <mxCell id="usb_line" value="USB Serial&#xa;(115200 baud)" style="shape=flexArrow;endArrow=classic;startArrow=none;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;endWidth=20;endSize=6;width=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="450" y="1415" as="sourcePoint" />
+            <mxPoint x="800" y="1415" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ==================== MONITOR COLUMN (RIGHT) ==================== -->
+        <mxCell id="mon_title" value="MONITOR (Go TUI)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=16;fontStyle=5;fontColor=#1e3a5f;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="100" width="170" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Monitor Init -->
+        <mxCell id="mon_args" value="Parsear argumentos&#xa;(--port, --baud, --mock)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="180" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e_fork_mon" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="fork" target="mon_args" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="740" y="155" />
+              <mxPoint x="1130" y="155" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="mon_mock" value="Modo mock?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1075" y="260" width="110" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="e_mon1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="mon_args" target="mon_mock" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mon_serial_src" value="Criar SerialSource&#xa;(porta USB do ESP32)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="268" width="150" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="e_mon2a" value="Não" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;" edge="1" source="mon_mock" target="mon_serial_src" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mon_mock_src" value="Criar MockSource&#xa;(peers simulados)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="905" y="268" width="140" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="e_mon2b" value="Sim" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;" edge="1" source="mon_mock" target="mon_mock_src" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mon_start_src" value="Iniciar DataSource&#xa;(abrir porta / goroutine)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="350" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e_mon3a" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="mon_serial_src" target="mon_start_src" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_mon3b" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="mon_mock_src" target="mon_start_src" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mon_start_ok" value="Start&#xa;ok?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1085" y="430" width="90" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="e_mon4" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="mon_start_src" target="mon_start_ok" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mon_exit_err" value="EXIT&#xa;(Erro)" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1250" y="435" width="90" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="e_mon4_no" value="Não" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;fontColor=#b85450;" edge="1" source="mon_start_ok" target="mon_exit_err" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mon_tui" value="Iniciar Bubble Tea TUI&#xa;(tela alternativa)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="520" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e_mon5" value="Sim" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;fontColor=#82b366;" edge="1" source="mon_start_ok" target="mon_tui" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Monitor Main Loop -->
+        <mxCell id="mon_loop" value="LOOP TUI&#xa;(tick a cada 100ms)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="610" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e_mon6" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="mon_tui" target="mon_loop" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mon_check_input" value="Tecla pressionada?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1065" y="690" width="130" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="e_mon7" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="mon_loop" target="mon_check_input" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mon_quit" value="FIM&#xa;(Encerrar)" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1260" y="695" width="100" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="e_mon8_quit" value="q / Ctrl+C" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;fontColor=#b85450;" edge="1" source="mon_check_input" target="mon_quit" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mon_read_peers" value="Ler snapshot de peers&#xa;do DataSource" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="785" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e_mon9" value="Não" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;" edge="1" source="mon_check_input" target="mon_read_peers" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mon_parse" value="Parsear NDJSON de cada peer&#xa;{mac, distance, bearing, state}" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fixedSize=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="990" y="870" width="280" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e_mon10" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="mon_read_peers" target="mon_parse" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mon_render" value="Renderizar Radar&#xa;(canvas terminal)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="955" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e_mon11" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="mon_parse" target="mon_render" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mon_zones" value="Zonas de cor:&#xa;Vermelho &lt; 5m&#xa;Amarelo &lt; 20m&#xa;Verde &gt; 20m" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1260" y="945" width="120" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="e_zones" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#d6b656;" edge="1" source="mon_render" target="mon_zones" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mon_display" value="Exibir radar + legenda&#xa;no terminal" style="shape=display;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="1040" width="160" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="e_mon12" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="mon_render" target="mon_display" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Monitor loop back -->
+        <mxCell id="e_mon_loop_back" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#9673a6;strokeWidth=2;" edge="1" source="mon_display" target="mon_loop" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1420" y="1067" />
+              <mxPoint x="1420" y="635" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ==================== SWIMLANE SEPARATORS ==================== -->
+        <mxCell id="lane_left" value="" style="endArrow=none;dashed=1;dashPattern=8 8;strokeColor=#999999;strokeWidth=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="470" y="80" as="sourcePoint" />
+            <mxPoint x="470" y="1580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lane_right" value="" style="endArrow=none;dashed=1;dashPattern=8 8;strokeColor=#999999;strokeWidth=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="880" y="80" as="sourcePoint" />
+            <mxPoint x="880" y="1580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Center column label -->
+        <mxCell id="center_label" value="COMUNICAÇÃO" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=14;fontStyle=5;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="600" y="830" width="130" height="30" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
