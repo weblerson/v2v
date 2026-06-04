@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>V2V — Comunicação Veicular Inteligente</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css" id="theme" />
+  <style>
+    :root {
+      --r-background-color: #0a0a1a;
+      --r-main-color: #e0e0e0;
+      --r-heading-color: #ffffff;
+      --r-link-color: #4fc3f7;
+    }
+
+    .reveal {
+      font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    .reveal h1, .reveal h2, .reveal h3 {
+      text-transform: none;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .reveal h1 { font-size: 2.4em; }
+    .reveal h2 { font-size: 1.6em; }
+    .reveal h3 { font-size: 1.2em; color: #4fc3f7; }
+
+    .accent { color: #4fc3f7; }
+    .danger { color: #ef5350; }
+    .success { color: #66bb6a; }
+    .warning { color: #ffa726; }
+
+    .reveal .subtitle {
+      font-size: 1.2em;
+      color: #90a4ae;
+      margin-top: 0.5em;
+    }
+
+    .reveal ul { list-style: none; padding-left: 0; }
+    .reveal ul li {
+      padding: 0.35em 0;
+      font-size: 0.85em;
+      line-height: 1.5;
+    }
+    .reveal ul li::before {
+      content: "▸ ";
+      color: #4fc3f7;
+      font-weight: bold;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2em;
+      margin-top: 1em;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 1.2em;
+      text-align: left;
+    }
+
+    .card h3 {
+      margin: 0 0 0.4em 0;
+      font-size: 1em;
+    }
+
+    .card p, .card ul {
+      font-size: 0.7em;
+      margin: 0;
+      color: #b0bec5;
+    }
+
+    .card ul li { padding: 0.15em 0; }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1.5em;
+      margin-top: 1.5em;
+    }
+
+    .stat-box {
+      background: rgba(255,255,255,0.04);
+      border-radius: 12px;
+      padding: 1.5em 1em;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .stat-box .number {
+      font-size: 2.2em;
+      font-weight: 800;
+      display: block;
+      line-height: 1;
+      margin-bottom: 0.2em;
+    }
+
+    .stat-box .label {
+      font-size: 0.65em;
+      color: #90a4ae;
+      display: block;
+    }
+
+    .flow-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5em;
+      margin-top: 1.5em;
+      flex-wrap: wrap;
+    }
+
+    .flow-step {
+      background: rgba(79,195,247,0.1);
+      border: 1px solid rgba(79,195,247,0.3);
+      border-radius: 10px;
+      padding: 0.8em 1em;
+      font-size: 0.7em;
+      text-align: center;
+      min-width: 120px;
+    }
+
+    .flow-step .icon { font-size: 1.6em; display: block; margin-bottom: 0.3em; }
+
+    .flow-arrow {
+      font-size: 1.4em;
+      color: #4fc3f7;
+    }
+
+    .layers {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8em;
+      margin-top: 1em;
+    }
+
+    .layer {
+      display: flex;
+      align-items: center;
+      gap: 1em;
+      background: rgba(255,255,255,0.04);
+      border-radius: 10px;
+      padding: 0.8em 1.2em;
+      border-left: 4px solid;
+    }
+
+    .layer .layer-icon { font-size: 1.8em; flex-shrink: 0; }
+    .layer .layer-content { text-align: left; }
+    .layer .layer-content h3 { margin: 0; font-size: 0.9em; }
+    .layer .layer-content p { margin: 0.2em 0 0; font-size: 0.65em; color: #b0bec5; }
+
+    .radar-demo {
+      font-family: 'Courier New', monospace;
+      font-size: 0.55em;
+      line-height: 1.2;
+      background: rgba(0,0,0,0.5);
+      border-radius: 12px;
+      padding: 1em;
+      display: inline-block;
+      text-align: center;
+      border: 1px solid rgba(79,195,247,0.2);
+    }
+
+    .zone-legend {
+      display: flex;
+      justify-content: center;
+      gap: 2em;
+      margin-top: 1em;
+      font-size: 0.7em;
+    }
+
+    .zone-dot {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 0.4em;
+      vertical-align: middle;
+    }
+
+    .timeline {
+      position: relative;
+      margin: 1.5em auto;
+      max-width: 700px;
+    }
+
+    .timeline-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 1em;
+      margin-bottom: 1em;
+      text-align: left;
+    }
+
+    .timeline-marker {
+      width: 36px;
+      height: 36px;
+      background: rgba(79,195,247,0.2);
+      border: 2px solid #4fc3f7;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8em;
+      flex-shrink: 0;
+    }
+
+    .timeline-text h3 { margin: 0; font-size: 0.85em; }
+    .timeline-text p { margin: 0.1em 0 0; font-size: 0.6em; color: #90a4ae; }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2em;
+      align-items: center;
+      margin-top: 1em;
+    }
+
+    .reveal .slide-number { color: #4fc3f7; }
+
+    .tag {
+      display: inline-block;
+      background: rgba(79,195,247,0.15);
+      color: #4fc3f7;
+      border-radius: 20px;
+      padding: 0.2em 0.8em;
+      font-size: 0.6em;
+      margin: 0.2em;
+      border: 1px solid rgba(79,195,247,0.3);
+    }
+
+    .big-icon {
+      font-size: 3em;
+      margin-bottom: 0.3em;
+      display: block;
+    }
+
+    .footer-note {
+      font-size: 0.5em;
+      color: #607d8b;
+      margin-top: 2em;
+    }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- SLIDE 1: Capa -->
+      <section>
+        <h1>V2V</h1>
+        <p class="subtitle">Comunicacao Veicular Inteligente</p>
+        <p style="font-size:0.7em; color:#607d8b; margin-top:1.5em;">
+          Sistema de alerta de proximidade e colisao em tempo real
+        </p>
+        <div style="margin-top:2em;">
+          <span class="tag">ESP32</span>
+          <span class="tag">ESP-NOW</span>
+          <span class="tag">GPS</span>
+          <span class="tag">Acelerometro</span>
+        </div>
+      </section>
+
+      <!-- SLIDE 2: O Problema -->
+      <section>
+        <h2>O Problema</h2>
+        <div class="stat-grid">
+          <div class="stat-box">
+            <span class="number danger">1,19</span>
+            <span class="label">milhoes de mortes por ano no transito mundial (OMS)</span>
+          </div>
+          <div class="stat-box">
+            <span class="number warning">90%</span>
+            <span class="label">dos acidentes sao causados por falha humana</span>
+          </div>
+          <div class="stat-box">
+            <span class="number accent">1,4m</span>
+            <span class="label">extras de frenagem a cada 100ms de atraso (a 50km/h)</span>
+          </div>
+        </div>
+        <p style="margin-top:1.5em; font-size:0.8em; color:#90a4ae;">
+          Motoristas nao conseguem ver veiculos frenando alem do campo de visao.<br>
+          <strong class="accent">E se os veiculos pudessem conversar entre si?</strong>
+        </p>
+      </section>
+
+      <!-- SLIDE 3: A Solucao -->
+      <section>
+        <h2>A Solucao: <span class="accent">V2V</span></h2>
+        <p style="font-size:0.85em; color:#b0bec5;">
+          Um sistema embarcado que permite veiculos trocarem informacoes de
+          <strong class="accent">aceleracao</strong>, <strong class="accent">posicao</strong> e
+          <strong class="accent">estado de movimento</strong> em tempo real.
+        </p>
+        <div class="flow-container">
+          <div class="flow-step">
+            <span class="icon">Sensor</span>
+            <strong>Detecta</strong><br>aceleracao local
+          </div>
+          <span class="flow-arrow">-></span>
+          <div class="flow-step">
+            <span class="icon">Radio</span>
+            <strong>Transmite</strong><br>para veiculos proximos
+          </div>
+          <span class="flow-arrow">-></span>
+          <div class="flow-step">
+            <span class="icon">GPS</span>
+            <strong>Localiza</strong><br>posicao relativa
+          </div>
+          <span class="flow-arrow">-></span>
+          <div class="flow-step">
+            <span class="icon">Alerta</span>
+            <strong>Avisa</strong><br>o motorista
+          </div>
+        </div>
+        <p class="footer-note">Tudo isso em menos de 250ms — mais rapido que um piscar de olhos</p>
+      </section>
+
+      <!-- SLIDE 4: Arquitetura em Camadas -->
+      <section>
+        <h2>Arquitetura</h2>
+        <div class="layers">
+          <div class="layer" style="border-color:#ef5350;">
+            <div class="layer-content">
+              <h3 style="color:#ef5350;">Camada de Seguranca</h3>
+              <p>Classificacao de estados (frenando/acelerando/parado) e alerta visual imediato via LED</p>
+            </div>
+          </div>
+          <div class="layer" style="border-color:#ffa726;">
+            <div class="layer-content">
+              <h3 style="color:#ffa726;">Camada de Posicionamento</h3>
+              <p>GPS (NEO-6M) para distancia e direcao relativa entre veiculos — com caminho de evolucao para UWB (precisao de 10cm)</p>
+            </div>
+          </div>
+          <div class="layer" style="border-color:#66bb6a;">
+            <div class="layer-content">
+              <h3 style="color:#66bb6a;">Camada de Sensoriamento</h3>
+              <p>Acelerometro MPU6050 com filtro de media movel e calibracao automatica</p>
+            </div>
+          </div>
+          <div class="layer" style="border-color:#4fc3f7;">
+            <div class="layer-content">
+              <h3 style="color:#4fc3f7;">Camada de Comunicacao</h3>
+              <p>ESP-NOW — broadcast mesh de baixa latencia, 10 transmissoes por segundo, sem necessidade de infraestrutura</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 5: Hardware -->
+      <section>
+        <h2>Componentes do Hardware</h2>
+        <div class="card-grid">
+          <div class="card">
+            <h3>ESP32 DevKit V1</h3>
+            <p>Microcontrolador com Wi-Fi integrado. Cerebro do sistema, responsavel por todo o processamento e comunicacao.</p>
+          </div>
+          <div class="card">
+            <h3>MPU6050</h3>
+            <p>Acelerometro de 3 eixos via I2C. Detecta aceleracao e frenagem do veiculo com sensibilidade de +/-2g.</p>
+          </div>
+          <div class="card">
+            <h3>NEO-6M GPS</h3>
+            <p>Receptor GPS para posicionamento. Calcula distancia e direcao entre veiculos via formula de Haversine.</p>
+          </div>
+          <div class="card">
+            <h3>LED Integrado</h3>
+            <p>Indicador visual imediato. Acende quando um veiculo proximo esta frenando — alerta direto ao motorista.</p>
+          </div>
+        </div>
+        <p class="footer-note">Custo de hardware acessivel e baseado em componentes comerciais</p>
+      </section>
+
+      <!-- SLIDE 6: Comunicacao ESP-NOW -->
+      <section>
+        <h2>Comunicacao: <span class="accent">ESP-NOW</span></h2>
+        <div class="two-col">
+          <div>
+            <ul>
+              <li>Protocolo <strong>peer-to-peer</strong> sem roteador Wi-Fi</li>
+              <li>Broadcast para todos os veiculos ao redor</li>
+              <li>Latencia ultra-baixa (<strong>menos de 5ms</strong>)</li>
+              <li><strong>10 pacotes por segundo</strong> por veiculo</li>
+              <li>Validacao anti-spoofing via MAC duplo</li>
+              <li>Suporte a ate <strong>8 veiculos</strong> simultaneos</li>
+            </ul>
+          </div>
+          <div>
+            <div class="card" style="text-align:center;">
+              <h3>Pacote V2V</h3>
+              <p style="font-family:monospace; font-size:0.8em; color:#4fc3f7; margin-top:0.5em;">
+                | MAC (6B) | SEQ (4B) | ACCEL (2B) |<br><br>
+                <span style="color:#90a4ae;">Total: apenas 19 bytes</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 7: Deteccao de Movimento -->
+      <section>
+        <h2>Classificacao de Movimento</h2>
+        <p style="font-size:0.75em; color:#b0bec5;">
+          Algoritmo inteligente com <strong class="accent">histerese</strong> para evitar alertas falsos
+        </p>
+        <div class="stat-grid" style="margin-top:1em;">
+          <div class="stat-box" style="border-left: 4px solid #ef5350;">
+            <span class="number" style="font-size:1.5em; color:#ef5350;">FRENANDO</span>
+            <span class="label" style="margin-top:0.5em;">
+              Aceleracao relativa negativa<br>acima do limiar (0,15g)
+            </span>
+          </div>
+          <div class="stat-box" style="border-left: 4px solid #66bb6a;">
+            <span class="number" style="font-size:1.5em; color:#66bb6a;">ACELERANDO</span>
+            <span class="label" style="margin-top:0.5em;">
+              Aceleracao relativa positiva<br>acima do limiar (0,15g)
+            </span>
+          </div>
+          <div class="stat-box" style="border-left: 4px solid #607d8b;">
+            <span class="number" style="font-size:1.5em; color:#607d8b;">PARADO</span>
+            <span class="label" style="margin-top:0.5em;">
+              Dentro da faixa de tolerancia<br>com margem de histerese
+            </span>
+          </div>
+        </div>
+        <p style="font-size:0.65em; color:#607d8b; margin-top:1em;">
+          Filtro de media movel (5 amostras) suaviza ruido do sensor antes da classificacao
+        </p>
+      </section>
+
+      <!-- SLIDE 8: Monitor / Radar -->
+      <section>
+        <h2>Monitor: <span class="accent">Radar em Tempo Real</span></h2>
+        <div class="two-col">
+          <div>
+            <div class="radar-demo">
+              <span style="color:#00bcd4;">N</span><br>
+              <span style="color:#333;">. . . . . . . . . . .</span><br>
+              <span style="color:#333;">. .</span> <span style="color:#66bb6a;">O</span> <span style="color:#333;">. . . . . . .</span><br>
+              <span style="color:#333;">. . . .</span> <span style="color:#ffa726;">O</span> <span style="color:#333;">. . . . .</span><br>
+              <span style="color:#00bcd4;">W</span> <span style="color:#333;">. . . .</span> <span style="color:#fff; font-weight:bold;">YOU</span> <span style="color:#333;">. . . .</span> <span style="color:#00bcd4;">E</span><br>
+              <span style="color:#333;">. . . . . . . . .</span> <span style="color:#ef5350;">O</span> <span style="color:#333;">.</span><br>
+              <span style="color:#333;">. . . . . . . . . . .</span><br>
+              <span style="color:#00bcd4;">S</span>
+            </div>
+          </div>
+          <div style="text-align:left;">
+            <ul>
+              <li>Visao 360 graus ao redor do veiculo</li>
+              <li>Zonas de distancia coloridas</li>
+              <li>Atualizacao a cada 100ms</li>
+              <li>Legenda com MAC, distancia, direcao e estado</li>
+            </ul>
+            <div class="zone-legend" style="flex-direction:column; gap:0.5em; margin-top:1em;">
+              <span><span class="zone-dot" style="background:#ef5350;"></span> Perigo: menos de 5m</span>
+              <span><span class="zone-dot" style="background:#ffa726;"></span> Atencao: 5 a 20m</span>
+              <span><span class="zone-dot" style="background:#66bb6a;"></span> Seguro: mais de 20m</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 9: Metricas de Validacao -->
+      <section>
+        <h2>Metricas de Validacao</h2>
+        <p style="font-size:0.75em; color:#b0bec5;">
+          Tres metricas para garantir que o sistema e <strong class="accent">confiavel e seguro</strong>
+        </p>
+        <div class="layers" style="margin-top:0.8em;">
+          <div class="layer" style="border-color:#4fc3f7;">
+            <div class="layer-content">
+              <h3 style="color:#4fc3f7;">Taxa de Entrega de Pacotes (PDR)</h3>
+              <p>Meta: 95% ou mais a 10Hz — garante que nenhum veiculo "desaparece" do radar silenciosamente</p>
+            </div>
+          </div>
+          <div class="layer" style="border-color:#ffa726;">
+            <div class="layer-content">
+              <h3 style="color:#ffa726;">Erro de Posicionamento (RMSE)</h3>
+              <p>Meta: 1m ou menos a curta distancia, 5m ou menos a longa distancia — valida a confiabilidade das zonas do radar</p>
+            </div>
+          </div>
+          <div class="layer" style="border-color:#ef5350;">
+            <div class="layer-content">
+              <h3 style="color:#ef5350;">Latencia do Alerta de Frenagem</h3>
+              <p>Meta: p95 de 250ms ou menos — a 50km/h, cada 100ms extra significa 1,4m a mais para frear</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 10: Evolucao / Roadmap -->
+      <section>
+        <h2>Evolucao do Projeto</h2>
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-marker" style="background:rgba(79,195,247,0.3);">1</div>
+            <div class="timeline-text">
+              <h3>Comunicacao ESP-NOW</h3>
+              <p>Broadcast de aceleracao entre dispositivos via mesh sem infraestrutura</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-marker" style="background:rgba(79,195,247,0.3);">2</div>
+            <div class="timeline-text">
+              <h3>Sensoriamento com MPU6050</h3>
+              <p>Deteccao de frenagem e aceleracao com calibracao automatica e filtro anti-ruido</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-marker" style="background:rgba(79,195,247,0.3);">3</div>
+            <div class="timeline-text">
+              <h3>Posicionamento GPS</h3>
+              <p>Distancia e direcao relativa via GPS com formula de Haversine (precisao de 2 a 5m)</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-marker" style="background:rgba(79,195,247,0.3);">4</div>
+            <div class="timeline-text">
+              <h3>Monitor Radar</h3>
+              <p>Interface visual em terminal com zonas de distancia e estados de movimento</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-marker" style="background:rgba(255,167,38,0.3); border-color:#ffa726;">5</div>
+            <div class="timeline-text">
+              <h3 style="color:#ffa726;">Metricas de Validacao</h3>
+              <p>Definicao e medicao das tres metricas de seguranca (PDR, RMSE, latencia)</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-marker" style="background:rgba(144,164,174,0.2); border-color:#607d8b;">6</div>
+            <div class="timeline-text">
+              <h3 style="color:#607d8b;">UWB (Ultra-Wideband)</h3>
+              <p>Upgrade para posicionamento com precisao de ~10cm via modulo DWM1000/3000</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 11: Diferenciais -->
+      <section>
+        <h2>Diferenciais</h2>
+        <div class="card-grid">
+          <div class="card">
+            <h3>Sem Infraestrutura</h3>
+            <p>Funciona sem torres, roteadores ou internet. Comunicacao direta veiculo a veiculo via ESP-NOW.</p>
+          </div>
+          <div class="card">
+            <h3>Ultra-Baixa Latencia</h3>
+            <p>Alerta de frenagem em menos de 250ms — mais rapido que o tempo de reacao humano (~1 segundo).</p>
+          </div>
+          <div class="card">
+            <h3>Baixo Custo</h3>
+            <p>Baseado em componentes comerciais acessiveis (ESP32, MPU6050, GPS). Viavel para producao em escala.</p>
+          </div>
+          <div class="card">
+            <h3>Escalavel</h3>
+            <p>Arquitetura modular com caminho de evolucao claro: GPS para UWB, LED para display, terminal para app mobile.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 12: Conclusao -->
+      <section>
+        <h2>V2V: Salvando Vidas com Tecnologia</h2>
+        <p style="font-size:0.85em; color:#b0bec5; max-width:700px; margin:1em auto;">
+          Um sistema inteligente, de baixo custo e sem dependencia de infraestrutura
+          que da aos motoristas <strong class="accent">percepcao alem do campo de visao</strong>,
+          reduzindo colisoes e salvando vidas.
+        </p>
+        <div style="margin-top:2em;">
+          <span class="tag">Seguranca Veicular</span>
+          <span class="tag">IoT</span>
+          <span class="tag">Sistemas Embarcados</span>
+          <span class="tag">Comunicacao V2V</span>
+        </div>
+        <p style="margin-top:2em; font-size:0.7em; color:#607d8b;">
+          Obrigado! Perguntas?
+        </p>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: 'c/t',
+      transition: 'fade',
+      transitionSpeed: 'fast',
+      center: true,
+      width: 1200,
+      height: 700,
+      margin: 0.08
+    });
+  </script>
+</body>
+</html>

@@ -4,8 +4,7 @@
 
 // --- Debug ---
 // Set to 1 to print raw sensor data (GPS NMEA, MPU6050 accel) to Serial.
-#define DEBUG 1
-
+#define DEBUG 0
 // --- Motion detection ---
 // MPU6050 ±2g range: 16384 LSB/g. 0.15g ≈ 2458 LSB.
 constexpr int16_t ACCEL_THRESHOLD       = 2458;
