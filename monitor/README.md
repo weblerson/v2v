@@ -26,14 +26,38 @@ for development).
 | SDA         | GPIO 21    |
 | SCL         | GPIO 22    |
 
-### ESP32 + NEO-6M GPS (positioning)
+### ESP32 + DWM1000 UWB (ranging)
 
-| NEO-6M pin | ESP32 pin   |
-|------------|-------------|
-| VCC        | 3V3         |
-| GND        | GND         |
-| TX         | GPIO 16 (RX2) |
-| RX         | GPIO 17 (TX2) |
+Distance now comes from Two-Way Ranging over ultra-wideband. The NEO-6M GPS it
+replaced is no longer wired — see `docs/PLAN_DWM1000.md`.
+
+| DWM1000 pin  | ESP32 pin | Notes |
+|--------------|-----------|-------|
+| VDD3V3 (6,7) | 3V3       | **Never 5 V** — absolute maximum is 4.0 V |
+| VDDAON (5)   | 3V3       | Same rail |
+| GND (8,16,21,23,24) | GND | All of them |
+| SPICLK (20)  | GPIO 18   | VSPI |
+| SPIMISO (19) | GPIO 19   | VSPI |
+| SPIMOSI (18) | GPIO 23   | VSPI |
+| SPICSn (17)  | GPIO 5    | Held high at boot by the module's internal pull-up |
+| RSTn (3)     | GPIO 27   | **Never drive high.** Firmware only pulls it low, then releases to high-Z |
+| IRQ (22)     | GPIO 26   | Unused (polled mode); leave unconnected or tie through a pull-down |
+| WAKEUP (2)   | GND       | Unused |
+
+Before powering anything up, work through the electrical checklist in
+`docs/PLAN_DWM1000.md` §7 and run the probe:
+
+```
+cd ../firmware
+pio run -e uwb_probe -t upload && pio device monitor -e uwb_probe
+```
+
+A healthy module answers `DEV_ID = 0xDECA0130`. Anything else is wiring or
+power, never software.
+
+Add 10 µF + 100 nF of decoupling at the module, and use a powered USB hub or a
+≥1 A supply: the ESP32's WiFi bursts plus the DWM1000's 160 mA receive current
+come close to what a plain USB 2.0 port will deliver.
 
 ### Connection to Computer
 
@@ -97,9 +121,25 @@ The radar shows a top-down circular view centered on your vehicle:
 - **Yellow zone** (middle ring) — peer is between **5 m** and **20 m**
 - **Green zone** (outer ring) — peer is farther than **20 m**
 
-Peers appear as colored dots (`●`) at their bearing and proportional distance.
-A legend at the bottom lists every peer with its MAC address, distance, bearing,
-and motion state (IDLE, BRAKING, ACCELERATING).
+The radial scale is square-root, not linear: on a linear scale the 5 m danger
+zone would take only a tenth of the radius and pack every nearby vehicle into
+the centre, which is exactly where UWB is most accurate and where the display
+needs to be readable.
+
+Peers are drawn one of two ways:
+
+- **Ring** (`○`) at the measured radius — distance known, direction unknown.
+  This is the normal case. A single DWM1000 antenna measures time of flight,
+  not direction; angle of arrival needs phase difference across two antennas,
+  which the DW1000 does not have. A ring says "somewhere at this distance",
+  which is precisely what the hardware knows. Drawing a dot would claim a
+  direction that was never measured.
+- **Dot** (`●`) at a bearing — only when the firmware reports
+  `bearing_valid: true`, which today means the GPS backend was selected for a
+  comparison run.
+
+A legend at the bottom lists every peer with its MAC, distance, bearing,
+closing speed, time to collision, and motion state.
 
 ## Serial Protocol
 
@@ -107,25 +147,30 @@ The monitor expects the ESP32 to emit one JSON object per line (NDJSON) at
 115200 baud. Each line describes one peer:
 
 ```json
-{"mac":"44:17:93:4C:7F:90","distance":12.3,"bearing":45.0,"state":"BRAKING"}
+{"mac":"44:17:93:4C:7F:90","distance":3.24,"bearing":0.0,"bearing_valid":false,"closing":1.85,"ttc":1.8,"state":"BRAKING"}
 ```
 
 ### Fields
 
-| Field      | Type   | Unit              | Description                              |
-|------------|--------|-------------------|------------------------------------------|
-| `mac`      | string | —                 | Peer MAC address (`XX:XX:XX:XX:XX:XX`)   |
-| `distance` | float  | meters            | Distance to peer                         |
-| `bearing`  | float  | degrees (0–360)   | Direction of peer, 0 = ahead, clockwise  |
-| `state`    | string | —                 | `IDLE`, `BRAKING`, or `ACCELERATING`     |
+| Field           | Type   | Unit            | Description                                          |
+|-----------------|--------|-----------------|------------------------------------------------------|
+| `mac`           | string | —               | Peer MAC address (`XX:XX:XX:XX:XX:XX`)               |
+| `distance`      | float  | meters          | Distance to peer                                     |
+| `bearing`       | float  | degrees (0–360) | Direction of peer, 0 = ahead, clockwise              |
+| `bearing_valid` | bool   | —               | Whether `bearing` carries real information           |
+| `closing`       | float  | m/s             | Rate the gap is shrinking; negative means separating |
+| `ttc`           | float  | seconds         | Time to collision, or `-1` when not converging       |
+| `state`         | string | —               | `IDLE`, `BRAKING`, or `ACCELERATING`                 |
+
+`closing` and `ttc` are what ranging at 10 Hz with ~10 cm of precision buys:
+"3.2 m, closing at 1.9 m/s, 1.8 s to contact" is a complete picture of a
+developing collision, and a more actionable one than a bearing.
 
 ### Notes
 
-- The firmware currently logs human-readable lines. To use serial mode, the
-  firmware must be updated to emit this JSON format (the `SerialSource` in
-  `source/serial.go` is stubbed and ready for implementation).
-- Stale peers (no update within 1.5 s) are not displayed — a cached position
-  from a moving vehicle is unreliable and potentially dangerous.
+- Peers with no fresh distance are not reported at all. The firmware drops a
+  range older than 300 ms, and the monitor drops a peer after 500 ms without a
+  line — a cached distance from a moving vehicle is worse than none.
 - Maximum tracked peers: 8 (configurable in the firmware's `config.h`).
 
 ## Flashing the Firmware

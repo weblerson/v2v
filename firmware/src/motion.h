@@ -17,7 +17,13 @@ void calibrate();
 int16_t readSmoothedLocalAccel();
 
 // Decide the relative motion state given the latest local accel and one
-// peer's accel, applying hysteresis against the previous state.
-MotionState classify(int16_t localAccel, int16_t remoteAccel);
+// peer's accel, applying hysteresis against `prev` — that peer's own previous
+// state.
+//
+// Pure function: the caller owns the state, one value per peer (PeerState in
+// peers.h). It used to hold a single shared static instead, which let one
+// peer's hysteresis decide another peer's classification, and made the result
+// depend on how many times per cycle the function happened to be called.
+MotionState classify(int16_t localAccel, int16_t remoteAccel, MotionState prev);
 
 }  // namespace motion

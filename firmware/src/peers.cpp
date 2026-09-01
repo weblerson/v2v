@@ -48,13 +48,32 @@ void init() {
 bool upsert(const uint8_t mac[6], uint32_t seq, int16_t accel, uint32_t nowMs) {
   bool accepted = false;
   portENTER_CRITICAL(&mux);
-  int idx = findSlot(mac);
+  int  idx     = findSlot(mac);
+  bool isNew   = false;
   if (idx < 0) {
     idx = allocSlot(nowMs);
+    memset(&table[idx], 0, sizeof(PeerState));
     memcpy(table[idx].mac, mac, 6);
-    table[idx].lastSeq = 0;
     table[idx].used = true;
+    isNew = true;
   }
+
+  // A peer that reboots starts counting from 1 again. The monotonic rule below
+  // would then reject every packet it ever sends, and the peer would vanish
+  // from the radar until *this* device restarts — a silent failure in a safety
+  // system. Two independent signals mark a new run rather than a late packet:
+  // we have heard nothing for longer than the staleness window, or the counter
+  // jumped far backwards. Inactivity alone covers the real case (an ESP32 takes
+  // well over REMOTE_TIMEOUT_MS to boot); the rollback check is the backstop.
+  const bool wasSilent =
+      (uint32_t)(nowMs - table[idx].lastRxMillis) > REMOTE_TIMEOUT_MS;
+  const bool bigRollback =
+      seq < table[idx].lastSeq && (table[idx].lastSeq - seq) > SEQ_REBOOT_GAP;
+  if (isNew || wasSilent || bigRollback) {
+    table[idx].lastSeq    = 0;
+    table[idx].lastMotion = IDLE;
+  }
+
   // Reject duplicates / out-of-order. Allow seq==0 for fresh slots.
   if (seq > table[idx].lastSeq || table[idx].lastSeq == 0) {
     table[idx].lastSeq      = seq;
@@ -64,6 +83,13 @@ bool upsert(const uint8_t mac[6], uint32_t seq, int16_t accel, uint32_t nowMs) {
   }
   portEXIT_CRITICAL(&mux);
   return accepted;
+}
+
+void updateMotion(const uint8_t mac[6], MotionState state) {
+  portENTER_CRITICAL(&mux);
+  const int idx = findSlot(mac);
+  if (idx >= 0) table[idx].lastMotion = state;
+  portEXIT_CRITICAL(&mux);
 }
 
 int snapshotFresh(PeerState* out, uint32_t nowMs) {

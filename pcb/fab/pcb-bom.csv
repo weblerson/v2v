@@ -1,0 +1,5 @@
+"Refs","Valor","Footprint","Qtd"
+"C2","100nF","Capacitor_SMD:C_0805_2012Metric","1"
+"DWM1","DWM1000","RF_Module:DWM1000","1"
+"U1","ESP32-DEVKIT-V1","esp32:MODULE_ESP32_DEVKIT_V1","1"
+"U4","GY-521","gy-521:MODULE_GY-521","1"

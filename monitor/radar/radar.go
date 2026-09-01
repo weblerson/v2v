@@ -58,8 +58,14 @@ func (c *canvas) set(x, y int, ch rune, color string) {
 }
 
 func (c *canvas) setStr(x, y int, s string, color string) {
-	for i, ch := range s {
-		c.set(x+i, y, ch, color)
+	// Advance by rune, not by byte. Ranging over a string yields byte offsets,
+	// so a multi-byte rune used to leave holes in the canvas and push the rest
+	// of the line out of column — visible in the "─── Peers ───" header and in
+	// any row containing "°" or "—".
+	col := 0
+	for _, ch := range s {
+		c.set(x+col, y, ch, color)
+		col++
 	}
 }
 
@@ -98,6 +104,25 @@ func (c *canvas) drawCircle(cx, cy int, r float64, ch rune, color string) {
 	}
 }
 
+// drawRing plots a peer's distance ring: the honest rendering for a peer whose
+// distance is known but whose direction is not. A minimum radius keeps very
+// close peers visible instead of collapsing them onto the centre marker.
+func (c *canvas) drawRing(cx, cy int, r float64, color string) {
+	if r < 1.5 {
+		r = 1.5
+	}
+	steps := int(2 * math.Pi * r * 3)
+	if steps < 60 {
+		steps = 60
+	}
+	for i := 0; i < steps; i++ {
+		angle := 2 * math.Pi * float64(i) / float64(steps)
+		x := cx + int(math.Round(r*math.Sin(angle)*2))
+		y := cy - int(math.Round(r*math.Cos(angle)))
+		c.set(x, y, '○', color)
+	}
+}
+
 // drawCrosshair draws faint + lines through the center.
 func (c *canvas) drawCrosshair(cx, cy int, r float64, color string) {
 	// Vertical line.
@@ -110,10 +135,29 @@ func (c *canvas) drawCrosshair(cx, cy int, r float64, color string) {
 	}
 }
 
+// radialFraction maps a distance to its position along the radar's radius,
+// from 0 at the centre to 1 at MaxRange.
+//
+// Square root rather than linear. On a linear scale with a 50 m outer edge the
+// 5 m danger zone occupies only a tenth of the radius, crushing every nearby
+// vehicle into a couple of characters around the centre — exactly the range
+// where UWB ranging is most accurate and where the driver most needs to read
+// the display. Under square root that zone gets about a third of the radius.
+func radialFraction(d float64) float64 {
+	if d <= 0 {
+		return 0
+	}
+	f := math.Sqrt(d / MaxRange)
+	if f > 1 {
+		f = 1
+	}
+	return f
+}
+
 // Render draws the full radar display and returns it as a string.
 func Render(width, height int, peers []protocol.PeerData) string {
-	// Reserve bottom rows for the peer list legend.
-	legendRows := len(peers) + 2
+	// Reserve bottom rows for the peer list legend (header + column titles).
+	legendRows := len(peers) + 3
 	radarH := height - legendRows
 	if radarH < 10 {
 		radarH = 10
@@ -130,9 +174,9 @@ func Render(width, height int, peers []protocol.PeerData) string {
 		radius = 4
 	}
 
-	// Zone radii (proportional to max range).
-	rRed := radius * (RedThreshold / MaxRange)
-	rYellow := radius * (YellowThreshold / MaxRange)
+	// Zone radii, on the same scale the peers use.
+	rRed := radius * radialFraction(RedThreshold)
+	rYellow := radius * radialFraction(YellowThreshold)
 	rOuter := radius
 
 	// Draw from outside in so inner rings overwrite.
@@ -160,32 +204,53 @@ func Render(width, height int, peers []protocol.PeerData) string {
 
 	// Place peers.
 	for _, p := range peers {
-		normDist := p.Distance / MaxRange
-		if normDist > 1 {
-			normDist = 1
+		normDist := radialFraction(p.Distance)
+		color := peerColor(p.Distance)
+		label := fmt.Sprintf("%.1fm", p.Distance)
+
+		if !p.BearingValid {
+			// Distance known, direction unknown — the normal case on the UWB
+			// backend. A ring says "somewhere at this radius"; a dot would
+			// claim a direction the hardware never measured.
+			r := normDist * radius
+			c.drawRing(cx, cy, r, color)
+			if r < 1.5 {
+				r = 1.5
+			}
+			c.setStr(cx+2, cy-int(math.Round(r)), label, bold+color)
+			continue
 		}
 
 		rad := p.Bearing * math.Pi / 180
 		px := cx + int(math.Round(normDist*radius*math.Sin(rad)*2))
 		py := cy - int(math.Round(normDist*radius*math.Cos(rad)))
 
-		color := peerColor(p.Distance)
 		c.set(px, py, '●', bold+color)
-
-		// Short label next to the marker.
-		label := fmt.Sprintf(" %.0fm", p.Distance)
-		c.setStr(px+1, py, label, color)
+		c.setStr(px+1, py, " "+label, color)
 	}
 
 	// Legend at the bottom.
 	legendY := radarH + 1
 	c.setStr(0, legendY, "─── Peers ───", dim)
+	c.setStr(0, legendY+1,
+		fmt.Sprintf("   %-18s %8s  %7s  %8s  %6s  %s",
+			"MAC", "DIST", "BEARING", "CLOSING", "TTC", "STATE"), dim)
+
 	for i, p := range peers {
 		color := peerColor(p.Distance)
-		stateIcon := stateIcon(p.State)
-		line := fmt.Sprintf(" %s %-20s %6.1fm  %5.1f°  %s %s",
-			stateIcon, p.MAC, p.Distance, p.Bearing, p.State, reset)
-		c.setStr(0, legendY+1+i, line, color)
+
+		bearing := "     —"
+		if p.BearingValid {
+			bearing = fmt.Sprintf("%5.1f°", p.Bearing)
+		}
+		ttc := "     —"
+		if p.TTC >= 0 {
+			ttc = fmt.Sprintf("%5.1fs", p.TTC)
+		}
+
+		line := fmt.Sprintf(" %s %-18s %7.2fm  %7s  %+6.2fm/s  %6s  %s",
+			stateIcon(p.State), p.MAC, p.Distance, bearing, p.Closing, ttc, p.State)
+		c.setStr(0, legendY+2+i, line, color)
 	}
 
 	return c.render()

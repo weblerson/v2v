@@ -18,6 +18,8 @@ type mockPeer struct {
 	distMax      float64
 	distPeriod   float64 // seconds for one full oscillation
 	distPhase    float64 // current phase in radians
+	closing      float64 // m/s, positive when approaching
+	ttc          float64 // seconds, -1 when not converging
 	state        string
 }
 
@@ -106,6 +108,17 @@ func (m *MockSource) tick() {
 		default:
 			p.state = "IDLE"
 		}
+
+		// Closing speed is just the negated distance trend; TTC follows from it.
+		p.closing = -deriv
+		if p.closing > 0.3 && p.distance > 0 {
+			p.ttc = p.distance / p.closing
+			if p.ttc > 99.9 {
+				p.ttc = 99.9
+			}
+		} else {
+			p.ttc = -1
+		}
 	}
 }
 
@@ -117,9 +130,16 @@ func (m *MockSource) Peers() []protocol.PeerData {
 	for i, p := range m.peers {
 		out[i] = protocol.PeerData{
 			MAC:      p.mac,
-			Distance: math.Round(p.distance*10) / 10,
+			Distance: math.Round(p.distance*100) / 100,
 			Bearing:  math.Round(p.bearing*10) / 10,
-			State:    p.state,
+			// False on purpose, matching what the UWB firmware actually emits.
+			// The mock is meant to look like production, and production has no
+			// bearing: peers render as rings. The dot path still gets exercised
+			// whenever the GPS backend is selected for a comparison run.
+			BearingValid: false,
+			Closing:      math.Round(p.closing*100) / 100,
+			TTC:          math.Round(p.ttc*10) / 10,
+			State:        p.state,
 		}
 	}
 	return out

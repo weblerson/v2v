@@ -2,27 +2,24 @@
 
 #include "position.h"
 
-// Positioning via a Decawave DWM1000/DWM3000 UWB module over SPI, using
-// Two-Way Ranging (TWR) to measure direct peer-to-peer distance at
-// ~10 cm accuracy.
+// Positioning via a Decawave DWM1000 UWB module over SPI, using asymmetric
+// double-sided Two-Way Ranging to measure peer-to-peer distance directly.
 //
-// TODO: implement once the hardware arrives. Sketch of the plan:
-//   * Wire DWM1000 to VSPI (MOSI/MISO/SCK + CS + IRQ + RST).
-//   * Use the `arduino-dw1000` library or Decawave's SDK.
-//   * begin():       configure radio (channel, PRF, data rate), register
-//                    IRQ handler, start listening.
-//   * update():      drive the TWR state machine — initiate a ranging
-//                    exchange round-robin against known peers (peer MACs
-//                    come from the existing comms peer table) and store
-//                    the resulting distance per peer with a timestamp.
-//   * distanceTo():  same freshness contract as the GPS handler — only
-//                    return a value if the last successful ranging for
-//                    that MAC is within POSITION_MAX_AGE_MS.
+// This is the active backend: UWB replaced GPS rather than supplementing it
+// (docs/PLAN_DWM1000.md, D10). Almost nothing happens in this class — the
+// ranging state machine lives in uwb_twr.cpp and runs in its own FreeRTOS
+// task, because one exchange takes ~8 ms and update() is contractually
+// non-blocking.
 //
-// Unlike the GPS handler, this implementation must NOT broadcast any
-// PositionPacket — ranging happens entirely on the UWB radio. When this
-// class is active, the PositionPacket type defined in protocol.h becomes
-// dead weight and can be removed (see the TODO note there).
+// bearingTo() always fails, and that is not an omission. The DWM1000 measures
+// time of flight, not direction; angle of arrival needs phase difference
+// across two antennas, which is a DW3000 feature. Rather than publishing a
+// plausible-looking zero — which would draw every vehicle straight ahead on
+// the radar — the unknown is reported honestly and the monitor draws a ring at
+// the measured radius. See D8 for the alternatives that were weighed, and why
+// deriving the angle from two GPS fixes was rejected: at 3 m of separation the
+// resulting bearing error is roughly ±30°, which is worst exactly inside the
+// red zone where the alert matters.
 class PositionDWMHandler : public PositionHandler {
  public:
   PositionDWMHandler() = default;
@@ -31,4 +28,7 @@ class PositionDWMHandler : public PositionHandler {
   void update() override;
   bool distanceTo(const uint8_t mac[6], float& meters) override;
   bool bearingTo(const uint8_t mac[6], float& degrees) override;
+
+ private:
+  bool ready_ = false;
 };

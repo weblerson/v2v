@@ -1,23 +1,27 @@
 #include "position_dwm.h"
 
-// TODO(DWM): full implementation pending hardware arrival. See header for
-// the intended design. All methods are deliberate no-ops so the class can
-// be instantiated for compile-time interface checks without misbehaving
-// at runtime (distanceTo never reports a fresh value → callers safely
-// treat every peer as "unknown distance").
+#include <Arduino.h>
+
+#include "uwb_twr.h"
 
 bool PositionDWMHandler::begin() {
-  return false;  // not implemented yet
+  ready_ = uwb::begin();
+  return ready_;
 }
 
 void PositionDWMHandler::update() {
-  // no-op
+  // Deliberately empty. Ranging runs in the task started by uwb::begin();
+  // there is nothing to drain or age here, and blocking this call would stall
+  // the main loop for the duration of an exchange.
 }
 
-bool PositionDWMHandler::distanceTo(const uint8_t /*mac*/[6], float& /*meters*/) {
-  return false;
+bool PositionDWMHandler::distanceTo(const uint8_t mac[6], float& meters) {
+  if (!ready_) return false;
+  return uwb::rangeTo(mac, millis(), meters);
 }
 
 bool PositionDWMHandler::bearingTo(const uint8_t /*mac*/[6], float& /*degrees*/) {
+  // No angle from a single UWB antenna — see the header for why this is a
+  // hardware limit and not a missing feature.
   return false;
 }

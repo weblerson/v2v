@@ -17,15 +17,6 @@ int      windowIdx   = 0;
 int      windowCount = 0;
 long     windowSum   = 0;
 
-// Hysteresis: previous decision per peer is held by the caller, but the
-// classifier is stateless across peers — we use a static last-state per
-// caller via a small trick: classify() takes only data, and the caller
-// stores the result. Here we expose a helper that applies hysteresis given
-// a "current state" hint passed back in. To keep the API simple we keep one
-// shared previous state — fine for the common 1-peer case; main.cpp can be
-// extended later to track per-peer history if needed.
-MotionState lastState = IDLE;
-
 int16_t pushSample(int16_t sample) {
   windowSum -= window[windowIdx];
   window[windowIdx] = sample;
@@ -71,25 +62,26 @@ int16_t readSmoothedLocalAccel() {
   return pushSample((int16_t)(ax - baselineX));
 }
 
-MotionState classify(int16_t localAccel, int16_t remoteAccel) {
+MotionState classify(int16_t localAccel, int16_t remoteAccel, MotionState prev) {
   const int32_t rel    = (int32_t)remoteAccel - (int32_t)localAccel;
   const int32_t enterT = ACCEL_THRESHOLD;
   const int32_t exitT  = (int32_t)(ACCEL_THRESHOLD * HYSTERESIS_EXIT_RATIO);
 
-  switch (lastState) {
+  MotionState next = prev;
+  switch (prev) {
     case BRAKING:
-      if (rel > -exitT) lastState = (rel > enterT) ? ACCELERATING : IDLE;
+      if (rel > -exitT) next = (rel > enterT) ? ACCELERATING : IDLE;
       break;
     case ACCELERATING:
-      if (rel < exitT) lastState = (rel < -enterT) ? BRAKING : IDLE;
+      if (rel < exitT) next = (rel < -enterT) ? BRAKING : IDLE;
       break;
     case IDLE:
     default:
-      if (rel < -enterT)      lastState = BRAKING;
-      else if (rel > enterT)  lastState = ACCELERATING;
+      if (rel < -enterT)      next = BRAKING;
+      else if (rel > enterT)  next = ACCELERATING;
       break;
   }
-  return lastState;
+  return next;
 }
 
 }  // namespace motion

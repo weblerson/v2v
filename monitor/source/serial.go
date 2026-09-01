@@ -12,12 +12,20 @@ import (
 	"v2v/monitor/protocol"
 )
 
-const staleAfter = 1500 * time.Millisecond
+// A peer is dropped from the display after this long without a line.
+//
+// Matched to the firmware's own timeouts rather than chosen freely: it emits
+// at 10 Hz and stops reporting a peer as soon as its range goes stale
+// (UWB_RANGE_MAX_AGE_MS = 300 ms), so anything much longer than this would keep
+// drawing a distance the firmware has already disowned.
+const staleAfter = 500 * time.Millisecond
 
 // SerialSource reads NDJSON peer data from the ESP32 serial port.
 //
 // Firmware emits one JSON object per line:
-//   {"mac":"44:17:93:4C:7F:90","distance":12.3,"bearing":45.0,"state":"BRAKING"}
+//
+//	{"mac":"44:17:93:4C:7F:90","distance":3.24,"bearing":0.0,
+//	 "bearing_valid":false,"closing":1.85,"ttc":1.8,"state":"BRAKING"}
 type SerialSource struct {
 	port string
 	baud int

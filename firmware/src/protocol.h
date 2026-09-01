@@ -16,11 +16,12 @@ struct __attribute__((packed)) V2VPacket {
 // Broadcast by the GPS positioning handler. Each car emits its own fix so
 // peers can compute relative distance via Haversine.
 //
-// TODO(DWM): when the DWM1000/DWM3000 arrives, positioning will switch to
-// Two-Way Ranging over UWB. At that point this packet type becomes unused
-// — ranging happens on the UWB radio, not ESP-NOW — and should be removed
-// (or gated behind a compile-time flag if we want to keep GPS as a
-// fallback for long-range scenarios).
+// No longer on the production path: positioning moved to Two-Way Ranging over
+// UWB, which happens entirely on the DWM1000's own radio and needs nothing
+// from ESP-NOW (docs/PLAN_DWM1000.md, D10). This type — along with
+// comms::broadcastRaw() and comms::setPositionRxHandler() — now exists solely
+// for PositionGPSHandler, which is kept compiling so the metrics campaign can
+// measure both backends over the same runs.
 struct __attribute__((packed)) PositionPacket {
   uint8_t  mac[6];
   uint32_t seq;
